@@ -26,7 +26,7 @@ function fontConvert(text, type = "command") {
 }
 
 function getCategoryEmoji(cat) {
- return categoryEmoji?.[cat.toLowerCase()] || "☄️";
+ return categoryEmoji?.[cat.toLowerCase()] || "🗂️";
 }
 
 function levenshteinDistance(a, b) {
