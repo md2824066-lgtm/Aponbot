@@ -78,7 +78,7 @@ module.exports = {
 │ Status     : Success
 ╰─━━━━━━━━━╾─╯
 ━━━━━━━━━━━━━━
-Made with ❤️ by Saimx69x.`;
+Made with ❤️ by Apon.`;
 
       api.sendMessage(
         { body: infoCard, attachment: fs.createReadStream(filePath) },
