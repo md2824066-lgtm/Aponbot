@@ -4,7 +4,7 @@ const fs = require("fs");
 const path = require("path");
 
 const W = 490, H = 840;
-const AVATAR1 = "https://i.imgur.com/5L1We9h.jpeg";
+const AVATAR1 = "https://files.catbox.moe/sur5hn.jpg";
 const FALLBACK_AVATAR = "https://i.ibb.co/MC6bT5V/default-avatar.png"; // fallback if error
 
 function formatUptime(ms) {
@@ -89,7 +89,7 @@ async function drawPage1(ctx) {
   ctx.fillStyle = "#ff99cc";
   ctx.shadowColor = "#ff33aa";
   ctx.shadowBlur = 25;
-  ctx.fillText("Habibur Rahman Saim", W / 2, 295); // slightly lower
+  ctx.fillText("Apon", W / 2, 295); // slightly lower
 
   ctx.font = "italic 20px Arial";
   ctx.fillStyle = "#ff66cc";
@@ -113,9 +113,9 @@ async function drawPage1(ctx) {
   ctx.shadowBlur = 12;
 
   const lines = [
-    "Nickname: Saim", "Age: 14+", "DOB: 15 March 2012",
+    "Nickname: Apon", "Age: 17+", "DOB: 01 January 2008",
     "Gender: Male", "Religion: Islam", "Nationality: Bangladeshi",
-    "Location: Dhaka,Islampur", "Class: Seven",
+    "Location: lakshmipur", "Class: ssc26",
     `Time: ${new Date().toLocaleString("en-IN", { timeZone: "Asia/Dhaka" })}`
   ];
   let y = 400;
