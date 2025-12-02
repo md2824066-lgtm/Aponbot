@@ -1,103 +1,92 @@
 const fs = require("fs-extra");
+const moment = require("moment-timezone");
 const { utils } = global;
 
 module.exports = {
-	config: {
-		name: "prefix",
-		version: "1.4",
-		author: "NTKhang",
-		countDown: 5,
-		role: 0,
-		description: "Thay đổi dấu lệnh của bot trong box chat của bạn hoặc cả hệ thống bot (chỉ admin bot)",
-		category: "config",
-		guide: {
-			vi: "   {pn} <new prefix>: thay đổi prefix mới trong box chat của bạn"
-				+ "\n   Ví dụ:"
-				+ "\n    {pn} #"
-				+ "\n\n   {pn} <new prefix> -g: thay đổi prefix mới trong hệ thống bot (chỉ admin bot)"
-				+ "\n   Ví dụ:"
-				+ "\n    {pn} # -g"
-				+ "\n\n   {pn} reset: thay đổi prefix trong box chat của bạn về mặc định",
-			en: "   {pn} <new prefix>: change new prefix in your box chat"
-				+ "\n   Example:"
-				+ "\n    {pn} #"
-				+ "\n\n   {pn} <new prefix> -g: change new prefix in system bot (only admin bot)"
-				+ "\n   Example:"
-				+ "\n    {pn} # -g"
-				+ "\n\n   {pn} reset: change prefix in your box chat to default"
-		}
-	},
+  config: {
+    name: "prefix",
+    version: "2.3",
+    author: "APON DICAPRIO",
+    countDown: 5,
+    role: 0,
+    description: "Show and change the bot prefix (chat or global)",
+    category: "⚙️ Configuration"
+  },
 
-	langs: {
-		vi: {
-			reset: "Đã reset prefix của bạn về mặc định: %1",
-			onlyAdmin: "Chỉ admin mới có thể thay đổi prefix hệ thống bot",
-			confirmGlobal: "Vui lòng thả cảm xúc bất kỳ vào tin nhắn này để xác nhận thay đổi prefix của toàn bộ hệ thống bot",
-			confirmThisThread: "Vui lòng thả cảm xúc bất kỳ vào tin nhắn này để xác nhận thay đổi prefix trong nhóm chat của bạn",
-			successGlobal: "Đã thay đổi prefix hệ thống bot thành: %1",
-			successThisThread: "Đã thay đổi prefix trong nhóm chat của bạn thành: %1",
-			myPrefix: "🌐 Prefix của hệ thống: %1\n🛸 Prefix của nhóm bạn: %2"
-		},
-		en: {
-			reset: "Your prefix has been reset to default: %1",
-			onlyAdmin: "Only admin can change prefix of system bot",
-			confirmGlobal: "Please react to this message to confirm change prefix of system bot",
-			confirmThisThread: "Please react to this message to confirm change prefix in your box chat",
-			successGlobal: "Changed prefix of system bot to: %1",
-			successThisThread: "Changed prefix in your box chat to: %1",
-			myPrefix: "🌐 System prefix: %1\n🛸 Your box chat prefix: %2"
-		}
-	},
+  onStart: async function ({ message, role, args, commandName, event, threadsData }) {
+    if (!args[0]) return message.SyntaxError();
 
-	onStart: async function ({ message, role, args, commandName, event, threadsData, getLang }) {
-		if (!args[0])
-			return message.SyntaxError();
+    if (args[0] === "reset") {
+      await threadsData.set(event.threadID, null, "data.prefix");
+      return message.reply(`✅ Reset to default prefix: ${global.GoatBot.config.prefix}`);
+    }
 
-		if (args[0] == 'reset') {
-			await threadsData.set(event.threadID, null, "data.prefix");
-			return message.reply(getLang("reset", global.GoatBot.config.prefix));
-		}
+    const newPrefix = args[0];
+    const setGlobal = args[1] === "-g";
 
-		const newPrefix = args[0];
-		const formSet = {
-			commandName,
-			author: event.senderID,
-			newPrefix
-		};
+    if (setGlobal && role < 2)
+      return message.reply("⛔ Only bot admins can change the global prefix!");
 
-		if (args[1] === "-g")
-			if (role < 2)
-				return message.reply(getLang("onlyAdmin"));
-			else
-				formSet.setGlobal = true;
-		else
-			formSet.setGlobal = false;
+    return message.reply(
+      setGlobal
+        ? "⚙️ React to confirm global prefix update."
+        : "⚙️ React to confirm this chat’s prefix update.",
+      (err, info) => {
+        global.GoatBot.onReaction.set(info.messageID, {
+          commandName,
+          author: event.senderID,
+          newPrefix,
+          setGlobal,
+          messageID: info.messageID,
+        });
+      }
+    );
+  },
 
-		return message.reply(args[1] === "-g" ? getLang("confirmGlobal") : getLang("confirmThisThread"), (err, info) => {
-			formSet.messageID = info.messageID;
-			global.GoatBot.onReaction.set(info.messageID, formSet);
-		});
-	},
+  onReaction: async function ({ message, threadsData, event, Reaction }) {
+    const { author, newPrefix, setGlobal } = Reaction;
+    if (event.userID !== author) return;
 
-	onReaction: async function ({ message, threadsData, event, Reaction, getLang }) {
-		const { author, newPrefix, setGlobal } = Reaction;
-		if (event.userID !== author)
-			return;
-		if (setGlobal) {
-			global.GoatBot.config.prefix = newPrefix;
-			fs.writeFileSync(global.client.dirConfig, JSON.stringify(global.GoatBot.config, null, 2));
-			return message.reply(getLang("successGlobal", newPrefix));
-		}
-		else {
-			await threadsData.set(event.threadID, newPrefix, "data.prefix");
-			return message.reply(getLang("successThisThread", newPrefix));
-		}
-	},
+    if (setGlobal) {
+      global.GoatBot.config.prefix = newPrefix;
+      fs.writeFileSync(global.client.dirConfig, JSON.stringify(global.GoatBot.config, null, 2));
+      return message.reply(`✅ Global prefix changed to: **${newPrefix}**`);
+    }
 
-	onChat: async function ({ event, message, getLang }) {
-		if (event.body && event.body.toLowerCase() === "prefix")
-			return () => {
-				return message.reply(getLang("myPrefix", global.GoatBot.config.prefix, utils.getPrefix(event.threadID)));
-			};
-	}
+    await threadsData.set(event.threadID, newPrefix, "data.prefix");
+    return message.reply(`✅ Chat prefix changed to: **${newPrefix}**`);
+  },
+
+  onChat: async function ({ event, message, threadsData }) {
+    const globalPrefix = global.GoatBot.config.prefix;
+    const threadPrefix = (await threadsData.get(event.threadID, "data.prefix")) || globalPrefix;
+
+    if (event.body && event.body.toLowerCase() === "prefix") {
+      const currentTime = moment().tz("Asia/Dhaka").format("hh:mm A");
+      const uptimeMs = process.uptime() * 1000;
+
+      function formatUptime(ms) {
+        const sec = Math.floor(ms / 1000) % 60;
+        const min = Math.floor(ms / (1000 * 60)) % 60;
+        const hr = Math.floor(ms / (1000 * 60 * 60));
+        return `${hr}h ${min}m ${sec}s`;
+      }
+
+      const uptime = formatUptime(uptimeMs);
+
+      return message.reply({
+        body:
+`꧁⩺ 𝗣𝗥𝗘𝗙𝗜𝗫 𝗜𝗡𝗙𝗢 ⩹꧂
+
+⌬ **Global Prefix:** ${globalPrefix}
+⚿ **Chat Prefix:** ${threadPrefix}
+⌗ **Help Command:** ${threadPrefix}help
+✦ **Current Time:** ${currentTime}
+⌛ **Bot Uptime:** ${uptime}
+⍟ **Your ID:** ${event.senderID}
+⚙ **Dev:** APON DICAPRIO`,
+        attachment: await utils.getStreamFromURL("https://files.catbox.moe/wio2hd.mp4")
+      });
+    }
+  }
 };
