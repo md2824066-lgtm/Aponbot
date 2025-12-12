@@ -5,7 +5,7 @@ const path = require("path");
 const ownerInfo = {
   name: "Apon",
   facebook: "https://www.facebook.com/share/14NCWc4Lhaa/",
-  telegram: "@Md Apon",
+  telegram: "@",apon_dicaprio
   supportGroup: "https://m.me/j/AbZP4jRGu45w70du/"
 };
 
