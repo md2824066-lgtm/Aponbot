@@ -1,100 +1,102 @@
-const { getStreamsFromAttachment } = global.utils;
+const fs = require("fs");
+const axios = require("axios");
 
 module.exports = {
-	config: {
-		name: "notification",
-		aliases: ["notify", "noti"],
-		version: "1.7",
-		author: "NTKhang",
-		countDown: 5,
-		role: 3,
-		description: {
-			vi: "Gửi thông báo từ admin đến all box",
-			en: "Send notification from admin to all box"
-		},
-		category: "owner",
-		guide: {
-			en: "{pn} <tin nhắn>"
-		},
-		envConfig: {
-			delayPerGroup: 250
-		}
-	},
+  config: {
+    name: "notification",
+    aliases: ["notify", "noti"],
+    version: "2.3",
+    author: "Apon",
+    countDown: 5,
+    role: 3,
+    description: {
+      vi: "Gửi thông báo từ admin đến all box",
+      en: "Send notification from admin to all groups"
+    },
+    category: "owner",
+    guide: {
+      en: "{pn} <message>"
+    },
+    envConfig: {
+      delayPerGroup: 250
+    }
+  },
 
-	langs: {
-		vi: {
-			missingMessage: "Vui lòng nhập tin nhắn bạn muốn gửi đến tất cả các nhóm",
-			notification: "Thông báo từ admin bot đến tất cả nhóm chat (không phản hồi tin nhắn này)",
-			sendingNotification: "Bắt đầu gửi thông báo từ admin bot đến %1 nhóm chat",
-			sentNotification: "✅ Đã gửi thông báo đến %1 nhóm thành công",
-			errorSendingNotification: "Có lỗi xảy ra khi gửi đến %1 nhóm:\n%2"
-		},
-		en: {
-			missingMessage: "Please enter the message you want to send to all groups",
-			notification: "Notification from admin bot to all chat groups (do not reply to this message)",
-			sendingNotification: "Start sending notification from admin bot to %1 chat groups",
-			sentNotification: "✅ Sent notification to %1 groups successfully",
-			errorSendingNotification: "An error occurred while sending to %1 groups:\n%2"
-		}
-	},
+  langs: {
+    vi: {
+      missingMessage: "Vui lòng nhập tin nhắn bạn muốn gửi đến tất cả các nhóm",
+      sendingNotification: "Bắt đầu gửi thông báo từ admin bot đến %1 nhóm chat",
+      sentNotification: "✅ Đã gửi thông báo đến %1 nhóm thành công",
+      errorSendingNotification: "Có lỗi xảy ra khi gửi đến %1 nhóm:\n%2"
+    },
+    en: {
+      missingMessage: "Please enter the message you want to send to all groups",
+      sendingNotification: "Start sending notification from admin bot to %1 chat groups",
+      sentNotification: "✅ Sent notification to %1 groups successfully",
+      errorSendingNotification: "An error occurred while sending to %1 groups:\n%2"
+    }
+  },
 
-	onStart: async function ({ message, api, event, args, commandName, envCommands, threadsData, getLang }) {
-		const { delayPerGroup } = envCommands[commandName];
-		if (!args[0])
-			return message.reply(getLang("missingMessage"));
-		const formSend = {
-			body: `${getLang("notification")}\n────────────────\n${args.join(" ")}`,
-			attachment: await getStreamsFromAttachment(
-				[
-					...event.attachments,
-					...(event.messageReply?.attachments || [])
-				].filter(item => ["photo", "png", "animated_image", "video", "audio"].includes(item.type))
-			)
-		};
+  onStart: async function ({ message, api, event, args, commandName, envCommands, threadsData, getLang }) {
+    const { delayPerGroup } = envCommands[commandName];
 
-		const allThreadID = (await threadsData.getAll()).filter(t => t.isGroup && t.members.find(m => m.userID == api.getCurrentUserID())?.inGroup);
-		message.reply(getLang("sendingNotification", allThreadID.length));
+    if (!args[0]) return message.reply(getLang("missingMessage"));
 
-		let sendSucces = 0;
-		const sendError = [];
-		const wattingSend = [];
+    const senderName = (await api.getUserInfo(event.senderID))[event.senderID].name;
 
-		for (const thread of allThreadID) {
-			const tid = thread.threadID;
-			try {
-				wattingSend.push({
-					threadID: tid,
-					pending: api.sendMessage(formSend, tid)
-				});
-				await new Promise(resolve => setTimeout(resolve, delayPerGroup));
-			}
-			catch (e) {
-				sendError.push(tid);
-			}
-		}
+    // Notification text without "video below" line
+    const notificationText = [
+      "╔═══════════════════════╗",
+      "       📢 𝐍𝐎𝐓𝐈𝐅𝐈𝐂𝐀𝐓𝐈𝐎𝐍",
+      "╚═══════════════════════╝",
+      `👤 𝐒𝐞𝐧𝐝𝐞𝐫: ${senderName}`,
+      "─────────────────────────────",
+      `💬 ${args.join(" ")}`,
+      "─────────────────────────────"
+    ].join("\n");
 
-		for (const sended of wattingSend) {
-			try {
-				await sended.pending;
-				sendSucces++;
-			}
-			catch (e) {
-				const { errorDescription } = e;
-				if (!sendError.some(item => item.errorDescription == errorDescription))
-					sendError.push({
-						threadIDs: [sended.threadID],
-						errorDescription
-					});
-				else
-					sendError.find(item => item.errorDescription == errorDescription).threadIDs.push(sended.threadID);
-			}
-		}
+    // Download fixed video to temporary file
+    const tmpVideoPath = `/tmp/notification_video.mp4`;
+    const videoUrl = "https://files.catbox.moe/zmra16.mp4";
 
-		let msg = "";
-		if (sendSucces > 0)
-			msg += getLang("sentNotification", sendSucces) + "\n";
-		if (sendError.length > 0)
-			msg += getLang("errorSendingNotification", sendError.reduce((a, b) => a + b.threadIDs.length, 0), sendError.reduce((a, b) => a + `\n - ${b.errorDescription}\n  + ${b.threadIDs.join("\n  + ")}`, ""));
-		message.reply(msg);
-	}
+    try {
+      const response = await axios.get(videoUrl, { responseType: "arraybuffer" });
+      fs.writeFileSync(tmpVideoPath, response.data);
+    } catch (err) {
+      console.error("Failed to download fixed video:", err);
+    }
+
+    // Get all groups
+    const allThreadID = (await threadsData.getAll()).filter(
+      t => t.isGroup && t.members.find(m => m.userID == api.getCurrentUserID())?.inGroup
+    );
+
+    message.reply(getLang("sendingNotification", allThreadID.length));
+
+    let sendSuccess = 0;
+    const sendError = [];
+
+    for (const thread of allThreadID) {
+      try {
+        await api.sendMessage(
+          { body: notificationText, attachment: fs.createReadStream(tmpVideoPath) },
+          thread.threadID
+        );
+        sendSuccess++;
+        await new Promise(resolve => setTimeout(resolve, delayPerGroup));
+      } catch (err) {
+        sendError.push(thread.threadID);
+      }
+    }
+
+    // Delete temporary video file
+    fs.unlinkSync(tmpVideoPath);
+
+    // Final report
+    let report = "";
+    if (sendSuccess > 0) report += getLang("sentNotification", sendSuccess) + "\n";
+    if (sendError.length > 0)
+      report += getLang("errorSendingNotification", sendError.length, sendError.join("\n"));
+    message.reply(report);
+  }
 };
