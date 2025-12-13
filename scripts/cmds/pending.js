@@ -5,8 +5,8 @@ const path = require("path");
 const ownerInfo = {
   name: "Apon",
   facebook: "https://www.facebook.com/share/14NCWc4Lhaa/",
-  telegram: "@",apon_dicaprio
-  supportGroup: "https://m.me/j/AbZP4jRGu45w70du/"
+  telegram: "@apon_dicaprio",
+  supportGroup: "https://m.me/j/Abb_QTRZxILZQnqb/"
 };
 
 module.exports = {
@@ -27,7 +27,7 @@ module.exports = {
 
   langs: {
     en: {
-      invaildNumber: "%1 is not a valid number",
+      invalidNumber: "%1 is not a valid number",
       cancelSuccess: "Refused %1 thread(s)!",
       approveSuccess: "Approved successfully %1 thread(s)!",
       cantGetPendingList: "Can't get the pending list!",
@@ -46,8 +46,8 @@ module.exports = {
 
     const lowerBody = body.trim().toLowerCase();
 
+    // Cancel threads
     if (lowerBody.startsWith("c") || lowerBody.startsWith("cancel")) {
-      
       const trimmed = body.replace(/^(c|cancel)\s*/i, "").trim();
       const index = trimmed.split(/\s+/).filter(Boolean);
 
@@ -59,12 +59,13 @@ module.exports = {
         );
 
       for (const i of index) {
-        if (isNaN(i) || i <= 0 || i > Reply.pending.length) {
-          api.sendMessage(getLang("invaildNumber", i), threadID);
+        const threadIndex = parseInt(i) - 1;
+        if (isNaN(threadIndex) || threadIndex < 0 || threadIndex >= Reply.pending.length) {
+          api.sendMessage(getLang("invalidNumber", i), threadID);
           continue;
         }
 
-        const targetThreadID = Reply.pending[parseInt(i) - 1].threadID;
+        const targetThreadID = Reply.pending[threadIndex].threadID;
         try {
           await api.removeUserFromGroup(BOT_UID, targetThreadID);
           count++;
@@ -76,18 +77,20 @@ module.exports = {
       return api.sendMessage(getLang("cancelSuccess", count), threadID, messageID);
     }
 
+    // Approve threads
     else {
       const index = body.split(/\s+/).filter(Boolean);
       if (index.length === 0)
         return api.sendMessage("Please provide at least one thread number to approve.", threadID, messageID);
 
       for (const i of index) {
-        if (isNaN(i) || i <= 0 || i > Reply.pending.length) {
-          api.sendMessage(getLang("invaildNumber", i), threadID);
+        const threadIndex = parseInt(i) - 1;
+        if (isNaN(threadIndex) || threadIndex < 0 || threadIndex >= Reply.pending.length) {
+          api.sendMessage(getLang("invalidNumber", i), threadID);
           continue;
         }
 
-        const targetThread = Reply.pending[parseInt(i) - 1].threadID;
+        const targetThread = Reply.pending[threadIndex].threadID;
         const prefix = global.utils.getPrefix(targetThread);
         const nickNameBot = global.GoatBot.config.nickNameBot || "Sakura Bot";
 
@@ -104,7 +107,7 @@ module.exports = {
           const imagePath = path.join(tmpDir, `botconnect_image_${targetThread}.png`);
 
           const response = await axios.get(apiUrl, { responseType: "arraybuffer" });
-          fs.writeFileSync(imagePath, response.data);
+          await fs.writeFile(imagePath, response.data);
 
           const textMsg = [
             "✅ 𝐆𝐫𝐨𝐮𝐩 𝐂𝐨𝐧𝐧𝐞𝐜𝐭𝐞𝐝 𝐒𝐮𝐜𝐜𝐞𝐬𝐬𝐟𝐮𝐥𝐥𝐲 🎊",
@@ -118,14 +121,11 @@ module.exports = {
           ].join("\n");
 
           await api.sendMessage(
-            {
-              body: textMsg,
-              attachment: fs.createReadStream(imagePath)
-            },
+            { body: textMsg, attachment: fs.createReadStream(imagePath) },
             targetThread
           );
 
-          fs.unlinkSync(imagePath);
+          await fs.unlink(imagePath);
         } catch (err) {
           console.error(`⚠️ Error sending botconnect message to ${targetThread}:`, err);
 
