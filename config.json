@@ -26,11 +26,11 @@
   },
   "adminBot": [
     "61583796833104",
-    ""
+    "61565898444113"
   ],
   "developer": [
     "61583796833104",
-    ""
+    "61565898444113"
   ],
   "vipuser": [
     "61583796833104",
@@ -45,7 +45,7 @@
     "whiteListIds": [],
     "notes": "if you enable this feature, only the ids in the whiteListIds section can use the bot"
   },
-  "nickNameBot": "Lisa bbz",
+  "nickNameBot": "𝙍𝙤𝙨𝙞𝙚 💋👀",
   "prefix": "/",
   "database": {
     "type": "sqlite",
