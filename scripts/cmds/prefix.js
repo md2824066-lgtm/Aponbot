@@ -85,7 +85,7 @@ module.exports = {
 ⌛ **Bot Uptime:** ${uptime}
 ⍟ **Your ID:** ${event.senderID}
 ⚙ **Dev:** APON DICAPRIO`,
-        attachment: await utils.getStreamFromURL("https://files.catbox.moe/wio2hd.mp4")
+        attachment: await utils.getStreamFromURL("https://files.catbox.moe/2f2qxf.jpg")
       });
     }
   }
