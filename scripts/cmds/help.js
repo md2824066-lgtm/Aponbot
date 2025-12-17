@@ -98,7 +98,7 @@ module.exports = {
  categories[cat].push(name);
  }
 
- const helpImage = "https://files.catbox.moe/2f2qxf.jpg";
+ const helpImage = "https://files.catbox.moe/qbx00k.jpg";
  const input = args.join(" ").trim();
 
  if (args[0] === "-c" && args[1]) {
