@@ -78,14 +78,14 @@ module.exports = {
         body:
 `꧁⩺ 𝗣𝗥𝗘𝗙𝗜𝗫 𝗜𝗡𝗙𝗢 ⩹꧂
 
-⌬ **Global Prefix:** ${globalPrefix}
-⚿ **Chat Prefix:** ${threadPrefix}
-⌗ **Help Command:** ${threadPrefix}help
-✦ **Current Time:** ${currentTime}
-⌛ **Bot Uptime:** ${uptime}
-⍟ **Your ID:** ${event.senderID}
-⚙ **Dev:** APON DICAPRIO`,
-        attachment: await utils.getStreamFromURL("https://files.catbox.moe/2f2qxf.jpg")
+🌍 **Global Prefix:** ${globalPrefix}
+💠 **Chat Prefix:** ${threadPrefix}
+🗃️ **Help Command:** ${threadPrefix}help
+⌚ **Current Time:** ${currentTime}
+⏰ **Bot Uptime:** ${uptime}
+💡 **Your ID:** ${event.senderID}
+💻 **Dev:** APON DICAPRIO`,
+        attachment: await utils.getStreamFromURL("https://files.catbox.moe/zbu75n.mp4")
       });
     }
   }
