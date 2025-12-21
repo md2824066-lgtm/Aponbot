@@ -101,4 +101,4 @@ async function downloadSong(url, api, event, title = null) {
     console.error(err);
     api.sendMessage(`❌ Failed to download song: ${err.message}`, event.threadID, event.messageID);
   }
-}
+    }
