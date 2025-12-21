@@ -1,5 +1,5 @@
 const axios = require("axios");
-const fs = require("fs");
+const fs = require("fs-extra");
 const path = require("path");
 
 module.exports = {
@@ -16,13 +16,18 @@ module.exports = {
 
   onStart: async function({ api, event }) {
     try {
-      const apiUrl = "https://xsaim8x-xxx-api.onrender.com/api/fox"; // Fox API
+      const GITHUB_RAW = "https://raw.githubusercontent.com/Saim-x69x/sakura/main/ApiUrl.json";
+      const rawRes = await axios.get(GITHUB_RAW);
+      const apiBase = rawRes.data.apiv1;
 
+      const apiUrl = `${apiBase}/api/fox`;
       const response = await axios.get(apiUrl, { responseType: "arraybuffer" });
       const buffer = Buffer.from(response.data, "binary");
 
-      const tempPath = path.join(__dirname, "fox_temp.jpg");
-      fs.writeFileSync(tempPath, buffer);
+      const cacheDir = path.join(__dirname, "cache");
+      await fs.ensureDir(cacheDir);
+      const tempPath = path.join(cacheDir, `fox_${Date.now()}.jpg`);
+      await fs.writeFile(tempPath, buffer);
 
       await api.sendMessage(
         {
@@ -30,10 +35,7 @@ module.exports = {
           attachment: fs.createReadStream(tempPath)
         },
         event.threadID,
-        () => {
-          
-          fs.unlinkSync(tempPath);
-        },
+        () => fs.unlinkSync(tempPath),
         event.messageID
       );
 
