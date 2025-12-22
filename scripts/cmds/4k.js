@@ -1,64 +1,75 @@
-const a = require("axios");
-const f = require("fs");
-const p = require("path");
+const axios = require("axios");
 
-const u = "http://65.109.80.126:20409/aryan/4k";
+const mahmud = async () => {
+  const base = await axios.get("https://raw.githubusercontent.com/mahmudx7/HINATA/main/baseApiUrl.json");
+  return base.data.mahmud;
+};
+
+/**
+* @author MahMUD
+* @author: do not delete it
+*/
 
 module.exports = {
   config: {
     name: "4k",
-    aliases: ["upscale"],
-    version: "1.1",
-    role: 0,
-    author: "ArYAN",
+    version: "1.7",
+    author: "MahMUD",
     countDown: 10,
-    longDescription: "Upscale images to 4K resolution.",
+    role: 0,
     category: "image",
+    description: "Enhance or restore image quality using 4k AI.",
     guide: {
-      en: "${pn} reply to an image to upscale it to 4K resolution."
+      en: "{pn} [url] or reply with image"
     }
   },
 
-  onStart: async function ({ message, event }) {
-    if (
-      !event.messageReply ||
-      !event.messageReply.attachments ||
-      !event.messageReply.attachments[0] ||
-      event.messageReply.attachments[0].type !== "photo"
-    ) {
-      return message.reply("📸 Please reply to an image to upscale it.");
+  onStart: async function ({ message, event, args }) {
+
+    const obfuscatedAuthor = String.fromCharCode(77, 97, 104, 77, 85, 68); 
+    if (module.exports.config.author !== obfuscatedAuthor) {
+      return api.sendMessage("You are not authorized to change the author name.", event.threadID, event.messageID);
+    }
+    const startTime = Date.now();
+    let imgUrl;
+
+    if (event.messageReply?.attachments?.[0]?.type === "photo") {
+      imgUrl = event.messageReply.attachments[0].url;
     }
 
-    const i = event.messageReply.attachments[0].url;
-    const t = p.join(__dirname, "cache", `upscaled_${Date.now()}.png`);
-    let m;
+    else if (args[0]) {
+      imgUrl = args.join(" ");
+    }
+
+    if (!imgUrl) {
+      return message.reply("Baby, Please reply to an image or provide an image URL");
+    }
+
+    const waitMsg = await message.reply("𝐋𝐨𝐚𝐝𝐢𝐧𝐠 𝟒𝐤 𝐢𝐦𝐚𝐠𝐞...𝐰𝐚𝐢𝐭 𝐛𝐚𝐛𝐲 <⏳");
+    message.reaction("⏳", event.messageID);
 
     try {
-      const r = await message.reply("🔄 Processing your image, please wait...");
-      m = r.messageID;
 
-      const d = await a.get(`${u}?imageUrl=${encodeURIComponent(i)}`);
-      if (!d.data.status) throw new Error(d.data.message || "API error");
+      const apiUrl = `${await mahmud()}/api/hd?imgUrl=${encodeURIComponent(imgUrl)}`;
 
-      const x = await a.get(d.data.enhancedImageUrl, { responseType: "stream" });
-      const w = f.createWriteStream(t);
-      x.data.pipe(w);
+      const res = await axios.get(apiUrl, { responseType: "stream" });
+      if (waitMsg?.messageID) message.unsend(waitMsg.messageID);
 
-      await new Promise((res, rej) => {
-        w.on("finish", res);
-        w.on("error", rej);
+      message.reaction("✅", event.messageID);
+
+      const processTime = ((Date.now() - startTime) / 1000).toFixed(2);
+
+      message.reply({
+        body: `✅ | 𝐇𝐞𝐫𝐞'𝐬 𝐲𝐨𝐮𝐫 𝟒𝐤 𝐢𝐦𝐚𝐠𝐞 𝐛𝐚𝐛𝐲`,
+        attachment: res.data
       });
 
-      await message.reply({
-        body: "✅ Your 4K upscaled image is ready!",
-        attachment: f.createReadStream(t),
-      });
-    } catch (e) {
-      console.error("Upscale Error:", e);
-      message.reply("❌ An error occurred while upscaling the image. Please try again later.");
-    } finally {
-      if (m) message.unsend(m);
-      if (f.existsSync(t)) f.unlinkSync(t);
+    } catch (error) {
+
+      if (waitMsg?.messageID) message.unsend(waitMsg.messageID);
+
+      message.reaction("❎", event.messageID);
+      message.reply(`🥹error baby, contact MahMUD.`);
     }
   }
 };
