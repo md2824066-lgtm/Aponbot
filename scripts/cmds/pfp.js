@@ -1,52 +1,54 @@
-const { GoatWrapper } = require("fca-saim-x69x");
+const axios = require("axios");
+const { GoatWrapper } = require("fca-liane-utils"); // বা GoatWrapper যেটা তোমার bot এ আছে
+
+// Base API URL fetch
+const baseApiUrl = async () => {
+  const base = await axios.get(
+    "https://raw.githubusercontent.com/mahmudx7/HINATA/main/baseApiUrl.json"
+  );
+  return base.data.mahmud;
+};
 
 module.exports = {
   config: {
-    name: "profile",
-    aliases: ["pp", "pfp"],
-    version: "1.0",
-    author: "Saimx69x",
-    countDown: 5,
+    name: "pp",
+    aliases: ["pfp", "dp", "profile"],
+    version: "1.8",
+    author: "MahMUD",
     role: 0,
-    shortDescription: "Show user's profile picture",
-    longDescription: "View profile picture of yourself, a tagged user, replied user, or a specific UID.",
-    category: "image",
-    guide: {
-      en: "{pn} [@tag | reply | uid] — Show profile picture"
-    }
+    category: "media",
+    shortDescription: "Get profile picture",
+    longDescription: "View the profile picture of yourself, reply user, mention, or UID",
   },
 
-  onStart: async function ({ event, message, args, usersData }) {
+  onStart: async function ({ message, event, args }) {
     try {
-      let targetID;
+      // Target ID: mention > reply > args > self
+      const target =
+        Object.keys(event.mentions || {})[0] ||
+        event.messageReply?.senderID ||
+        (args[0] && args[0]) ||
+        event.senderID;
 
-      if (event.type === "message_reply") {
-        targetID = event.messageReply.senderID;
-      } 
-      else if (Object.keys(event.mentions)[0]) {
-        targetID = Object.keys(event.mentions)[0];
-      } 
-      else if (args[0] && !isNaN(args[0])) {
-        targetID = args[0];
-      } 
-      else {
-        targetID = event.senderID;
-      }
+      // Build API URL
+      const apiUrl = `${await baseApiUrl()}/api/pfp?mahmud=${encodeURIComponent(target)}`;
 
-      const name = await usersData.getName(targetID).catch(() => "Unknown User");
-      const avatarURL = await usersData.getAvatarUrl(targetID);
+      // Fetch image as stream
+      const res = await axios.get(apiUrl, { responseType: "stream" });
 
+      // Send profile picture
       return message.reply({
-        body: `🖼️ 𝑷𝒓𝒐𝒇𝒊𝒍𝒆 𝑷𝒊𝒄𝒕𝒖𝒓𝒆 𝒐𝒇\n✨️ ${name} (${targetID})`,
-        attachment: await global.utils.getStreamFromURL(avatarURL)
+        body: "🎀 Here's the profile picture",
+        attachment: res.data
       });
 
-    } catch (err) {
-      console.error(err);
-      return message.reply("❌ Could not fetch the profile picture. Maybe UID is invalid or privacy blocked.");
+    } catch (e) {
+      console.log(e?.response?.status, e?.message);
+      return message.reply("🥹 Error fetching profile picture. Contact MahMUD.");
     }
   }
 };
 
+// ✅ Enable No-Prefix
 const wrapper = new GoatWrapper(module.exports);
-wrapper.applyNoPrefix({ allowPrefix: true });
+wrapper.applyNoPrefix({ allowPrefix: true }); // এখন pp/pfp/profile prefix ছাড়া কাজ করবে
