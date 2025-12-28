@@ -7,42 +7,29 @@ module.exports = {
     name: "tiktok",
     aliases: ["tt"],
     version: "2 0",
-    author: "Saimx69x",
+    author: "Saimx69x [modified by Apon]",
     role: 0,
     shortDescription: "Search and download TikTok videos",
-    longDescription: "Paginated TikTok video search (10 per page) ",
+    longDescription: "Paginated TikTok video search (10 per page)",
     category: "media",
     guide: "{p}tiktok <keyword>"
   },
 
   onStart: async function ({ api, event, args }) {
-    const query = args.join(" ");
-    if (!query)
-      return api.sendMessage("🌀 | Type a keyword!\nExample: /tiktok sakura haruka", event.threadID, event.messageID);
+    await handleTikTokCommand(api, event, args);
+  },
 
-    try {
-      api.setMessageReaction("⌛️", event.messageID, event.threadID, () => {});
-    } catch (e) {
-      console.error("Reaction error (start):", e.message);
-    }
+  onChat: async function ({ api, event }) {
+    // Without prefix support
+    const body = event.body?.trim();
+    if (!body) return;
 
-    try {
-      const res = await axios.get(`https://xsaim8x-xxx-api.onrender.com/api/tiktok?query=${encodeURIComponent(query)}`, { timeout: 15000 });
-      const data = res.data?.results || res.data?.data || [];
+    const split = body.split(" ");
+    const cmd = split[0].toLowerCase();
+    const args = split.slice(1);
 
-      if (!data || data.length === 0) {
-        try { api.setMessageReaction("❌️", event.messageID, event.threadID, () => {}); } catch {}
-        return api.sendMessage("❌ | No TikTok videos found!", event.threadID, event.messageID);
-      }
-
-      const allResults = Array.isArray(data) ? data.slice(0, 30) : [];
-      try { api.setMessageReaction("✅️", event.messageID, event.threadID, () => {}); } catch {}
-
-      await sendPage(api, event, allResults, 1, query);
-    } catch (err) {
-      console.error("Fetch error:", err?.message || err);
-      try { api.setMessageReaction("❌️", event.messageID, event.threadID, () => {}); } catch {}
-      api.sendMessage("⚠️ | Failed to fetch TikTok results. Try again later.", event.threadID, event.messageID);
+    if (["tiktok", "tt"].includes(cmd)) {
+      await handleTikTokCommand(api, event, args);
     }
   },
 
@@ -117,6 +104,37 @@ module.exports = {
     }
   }
 };
+
+// Central handler for TikTok commands
+async function handleTikTokCommand(api, event, args) {
+  const query = args.join(" ");
+  if (!query)
+    return api.sendMessage("🌀 | Type a keyword!\nExample: tiktok sakura haruka", event.threadID, event.messageID);
+
+  try {
+    api.setMessageReaction("⌛️", event.messageID, event.threadID, () => {});
+  } catch (e) { console.error("Reaction error (start):", e.message); }
+
+  try {
+    const res = await axios.get(`https://xsaim8x-xxx-api.onrender.com/api/tiktok?query=${encodeURIComponent(query)}`, { timeout: 15000 });
+    const data = res.data?.results || res.data?.data || [];
+
+    if (!data || data.length === 0) {
+      try { api.setMessageReaction("❌️", event.messageID, event.threadID, () => {}); } catch {}
+      return api.sendMessage("❌ | No TikTok videos found!", event.threadID, event.messageID);
+    }
+
+    const allResults = Array.isArray(data) ? data.slice(0, 30) : [];
+    try { api.setMessageReaction("✅️", event.messageID, event.threadID, () => {}); } catch {}
+
+    await sendPage(api, event, allResults, 1, query);
+  } catch (err) {
+    console.error("Fetch error:", err?.message || err);
+    try { api.setMessageReaction("❌️", event.messageID, event.threadID, () => {}); } catch {}
+    api.sendMessage("⚠️ | Failed to fetch TikTok results. Try again later.", event.threadID, event.messageID);
+  }
+}
+
 async function sendPage(api, event, allResults, page, query) {
   const start = (page - 1) * 10;
   const end = start + 10;
@@ -177,4 +195,4 @@ async function sendPage(api, event, allResults, page, query) {
       event.messageID
     );
   });
-        }
+}
