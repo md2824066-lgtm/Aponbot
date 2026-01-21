@@ -1,4 +1,4 @@
-.const { existsSync, writeJsonSync, readJSONSync } = require("fs-extra");
+const { existsSync, writeJsonSync, readJSONSync } = require("fs-extra");
 const moment = require("moment-timezone");
 const path = require("path");
 const axios = require("axios");
